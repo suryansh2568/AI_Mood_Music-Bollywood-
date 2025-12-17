@@ -7,9 +7,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import random
 
-# =========================================================================
-# 1. SETUP & CONFIGURATION
-# =========================================================================
+
+# 1. SETUP 
 CLIENT_ID = '5bc83e9abb1842b690f94c11d3eef335'
 CLIENT_SECRET = '2a5ad0dfbe044cba93fb6a1cabf58853'
 
@@ -17,9 +16,8 @@ st.set_page_config(page_title="Mood Music Player", page_icon="🎵")
 st.title("🎵 Mood Music Player (Bollywood Edition)")
 st.write("Take a selfie. I will play Hindi/Punjabi songs ONLY.")
 
-# =========================================================================
+
 # 2. LOAD MODELS
-# =========================================================================
 @st.cache_resource
 def load_models():
     emotion_model = load_model('emotion_model.hdf5', compile=False)
@@ -33,15 +31,13 @@ try:
 except Exception as e:
     st.error(f"❌ Error loading models: {e}")
 
-# =========================================================================
 # 3. SPOTIFY SETUP
-# =========================================================================
+
 auth_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
-# =========================================================================
-# 4. AGGRESSIVE BOLLYWOOD LOGIC
-# =========================================================================
+
+# 4. BOLLYWOOD LOGIC
 def get_music_link(mood):
     search_query = ""
     if mood == 'Happy':
@@ -72,17 +68,14 @@ def get_music_link(mood):
     
     return None, None, None
 
-# =========================================================================
-# 5. APP INTERFACE (With Mobile Fixes)
-# =========================================================================
+# 5. APP INTERFACE
+
 img_file_buffer = st.camera_input("Take a Picture")
 
 if img_file_buffer is not None:
     file_bytes = np.asarray(bytearray(img_file_buffer.read()), dtype=np.uint8)
     frame = cv2.imdecode(file_bytes, 1)
-
-    # --- FIX 1: RESIZE IMAGE (Crucial for Mobile) ---
-    # Mobile cameras are 4000px wide. We resize to 800px to match laptop quality.
+    
     height, width = frame.shape[:2]
     target_width = 800
     if width > target_width:
@@ -92,22 +85,18 @@ if img_file_buffer is not None:
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # --- FIX 2: SMART ROTATION (Crucial for Portrait Mode) ---
-    # We try to detect a face. If we fail, we rotate the image and try again.
     faces = face_classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
 
     if len(faces) == 0:
-        # Try rotating 90 degrees clockwise (for portrait phones)
         gray_rotated = cv2.rotate(gray, cv2.ROTATE_90_CLOCKWISE)
         faces_rotated = face_classifier.detectMultiScale(gray_rotated, scaleFactor=1.1, minNeighbors=4)
         
         if len(faces_rotated) > 0:
-            # It worked! Update variables to use the rotated version
             faces = faces_rotated
             gray = gray_rotated
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    # --- PROCESS FACES ---
+    # PROCESS FACES
     if len(faces) > 0:
         for (x, y, w, h) in faces:
             roi_gray = gray[y:y+h, x:x+w]
@@ -135,3 +124,4 @@ if img_file_buffer is not None:
             break
     else:
         st.warning("No face detected. Try holding your phone in Landscape (Horizontal) mode.")
+
